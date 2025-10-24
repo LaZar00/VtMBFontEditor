@@ -1,16 +1,20 @@
+using System.Runtime.InteropServices;
+
 namespace VtMBFontEditor
 {
-    internal static class Program
+    public partial class Program
     {
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        public static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
+            Application.SetHighDpiMode(HighDpiMode.DpiUnaware);
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
             ApplicationConfiguration.Initialize();
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
             Application.Run(new FontEditor());
         }
     }

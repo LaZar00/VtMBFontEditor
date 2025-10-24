@@ -8,6 +8,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <StartupObject>VtMBFontEditor.Program</StartupObject>
     <ApplicationIcon>VtMBFontEditor.ico</ApplicationIcon>
+    <ApplicationHighDpiMode>DpiUnaware</ApplicationHighDpiMode>
+    <ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>VtMB Font Editor</Title>
+    <SignAssembly>True</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>

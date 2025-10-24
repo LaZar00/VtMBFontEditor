@@ -1,17 +1,19 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace VtMBFontEditor
 {
-    public class FontFile
+
+    public partial class FontFile
     {
-        public const int CHARTABLESIZE_DEFAULT = 0x21CC;
+        // I use this value in header to test a different generation method of the
+        // font. Please, don't use this value unless you know what are you doing.
+        public const int CHARTABLESIZE_MAX = 0x2BD4;
 
         public HDR Font;
 
@@ -34,8 +36,10 @@ namespace VtMBFontEditor
             public PageInfo[] pageinfo;         // The .fnt file has the same number of fileinfo as the pages.
             public byte[] filename;             // Lastly we have the name of the last page filename ending with 0 (zero).
 
-            public byte[] buffer;               // In some fonts I found unknown information relative to other fonts.
-                                                // Not sure if needed, but we will save it also.
+            //public byte[] buffer;               // In some fonts I found unknown information relative to other fonts.
+            //                                    // Not sure if needed, but we will save it also.
+
+            public int loadedchars;             // Here we will write the real number of chars that has data.
 
             public HDR()
             {
@@ -56,7 +60,7 @@ namespace VtMBFontEditor
 
                 pageinfo = new PageInfo[1];
                 filename = new byte[1];
-                buffer = new byte[1];
+                //buffer = new byte[1];
             }
         }
 
@@ -69,6 +73,7 @@ namespace VtMBFontEditor
             public float y_bottomright;
 
             public int itemNum;
+            public bool enabled;
 
             public CharacterInfo()
             {
@@ -78,6 +83,8 @@ namespace VtMBFontEditor
                 y_topleft = 0;
                 x_bottomright = 0;
                 y_bottomright = 0;
+
+                enabled = false;
             }
         }
 
@@ -85,14 +92,14 @@ namespace VtMBFontEditor
         {
             public uint tgawidth;                // normally 256
             public uint tgaheight;               // normally 256
-            public uint tgacolor;                // normally 16
+            public uint tgaoffsetname;                // normally 16
             public uint tgaxxxxx;                // normally 0
 
             public PageInfo()
             {
                 tgawidth = 256;
                 tgaheight = 256;
-                tgacolor = 16;
+                tgaoffsetname = 16;
                 tgaxxxxx = 0;
             }
         }
@@ -149,48 +156,37 @@ namespace VtMBFontEditor
 
                     // now read each character info
                     int counter = 0;
-                    int i;
+                    int i, charIdx;
 
-                    for (i = 0; i < FontEditor.MAX_NUM_CHARS; i++)
+                    for (i = 0x21; i < FontEditor.MAX_NUM_CHARS; i++)
                     {
-                        if (Font.charinfosize == CHARTABLESIZE_DEFAULT)
+                        charIdx = Array.IndexOf(Font.chartable, (byte)(i - 0x21), 0x21);
+                        
+                        //if (Font.chartable[i] != 0xD || (Font.chartable[i] == 0xD && i == 46))
+                        if (charIdx > -1)
                         {
-                            if (Font.chartable[i] != 0xD || (Font.chartable[i] == 0xD && i == 46))
-                            {
-                                Font.char_info[i].charsettings = new sbyte[28];
-
-                                for (int j = 0; j < 28; j++)
-                                {
-                                    Font.char_info[i].charsettings[j] = fntReader.ReadSByte();
-                                }
-
-                                Font.char_info[i].x_topleft = fntReader.ReadSingle();
-                                Font.char_info[i].y_topleft = fntReader.ReadSingle();
-                                Font.char_info[i].x_bottomright = fntReader.ReadSingle();
-                                Font.char_info[i].y_bottomright = fntReader.ReadSingle();
-
-                                Font.char_info[i].itemNum = counter;
-                                counter++;
-                            }
-                        }
-                        else
-                        {
-                            Font.char_info[i].charsettings = new sbyte[28];
+                            Font.char_info[charIdx].charsettings = new sbyte[28];
 
                             for (int j = 0; j < 28; j++)
                             {
-                                Font.char_info[i].charsettings[j] = fntReader.ReadSByte();
+                                Font.char_info[charIdx].charsettings[j] = fntReader.ReadSByte();
                             }
 
-                            Font.char_info[i].x_topleft = fntReader.ReadSingle();
-                            Font.char_info[i].y_topleft = fntReader.ReadSingle();
-                            Font.char_info[i].x_bottomright = fntReader.ReadSingle();
-                            Font.char_info[i].y_bottomright = fntReader.ReadSingle();
+                            Font.char_info[charIdx].x_topleft = fntReader.ReadSingle();
+                            Font.char_info[charIdx].y_topleft = fntReader.ReadSingle();
+                            Font.char_info[charIdx].x_bottomright = fntReader.ReadSingle();
+                            Font.char_info[charIdx].y_bottomright = fntReader.ReadSingle();
 
-                            Font.char_info[i].itemNum = counter;
+                            Font.char_info[charIdx].enabled = true;
+
+                            Font.char_info[charIdx].itemNum = counter;
+
                             counter++;
                         }
                     }
+
+                    //  Let's write the number of loaded chars
+                    Font.loadedchars = counter - 1;
 
                     // finally read fileinfo part for each numpage
                     Font.pageinfo = new PageInfo[Font.num_pages];
@@ -199,7 +195,7 @@ namespace VtMBFontEditor
                     {
                         Font.pageinfo[i].tgawidth = fntReader.ReadUInt32();
                         Font.pageinfo[i].tgaheight = fntReader.ReadUInt32();
-                        Font.pageinfo[i].tgacolor = fntReader.ReadUInt32();
+                        Font.pageinfo[i].tgaoffsetname = fntReader.ReadUInt32();
                         Font.pageinfo[i].tgaxxxxx = fntReader.ReadUInt32();
                     }
 
@@ -209,128 +205,198 @@ namespace VtMBFontEditor
                     Font.filename = fntReader.ReadBytes(counter);
 
                     // Get the last bytes of the file in a byte array.
-                    if (fntReader.BaseStream.Length > fntReader.BaseStream.Position)
-                    {
-                        Font.buffer = new byte[fntReader.BaseStream.Length - fntReader.BaseStream.Position];
-                        Font.buffer = fntReader.ReadBytes((int)fntReader.BaseStream.Length - (int)fntReader.BaseStream.Position);
-                    }
+                    //if (fntReader.BaseStream.Length > fntReader.BaseStream.Position)
+                    //{
+                    //    Font.buffer = new byte[fntReader.BaseStream.Length - fntReader.BaseStream.Position];
+                    //    Font.buffer = fntReader.ReadBytes((int)fntReader.BaseStream.Length - (int)fntReader.BaseStream.Position);
+                    //}
                 }
             }
         }
 
-        public int CalculateFileSize()
+        
+        private void ReOrderCharTable()
         {
-            int size = 0, i = 0;
+            int iMaxValue = 0, i;
 
-            // Size of the font file:   36 header +
-            //                          256 charset tale +
-            //                          190 chars * 44 bytes +     >> In this case we will check the chars used
-            //                          16 bytes fileinfo * num_pages +           in case we want to do something more
-            //                          size of last page filename
-            //                          buffer
-
-            size = 36 + 256;
-
-            // Add Char Table
-            for (i = 0; i < FontEditor.MAX_NUM_CHARS; i++)
+            // Here we will make linear the characters in chartable.
+            // So, if we have: "0D 70 71 BF 0D 72", we have now: "0D 70 71 72 0D 73".
+            // This must match later the individual character info in the font.
+            
+            // First let's get the maximum value below 0x80.
+            for (i = 0; i < 0x80; i++)
             {
-                if (Font.char_info[i].charsettings != null) size += 44;
+                if (iMaxValue < Font.chartable[i]) iMaxValue = Font.chartable[i];
             }
 
-            // Add fileinfo page size
-            size += 16 * (int)Font.num_pages;
+            // Now let's update the values in the chartable above 0x80 (included).
+            iMaxValue++;
 
-            // Add filename length
-            size += Font.filename.Length;
+            for (i = 0x80; i <= 0xFF; i++)
+            {
+                if (Font.chartable[i] != 0xD) Font.chartable[i] = (byte)iMaxValue++;
+            }
+        }
 
-            // Add buffer length if needed
-            if (Font.buffer.Length > 1) size += Font.buffer.Length;
 
-            return size;
+        // With this function we calculate the offset of the filename page
+        // for a given page index.
+        // bNumPagesUpdated means that we can call this from ManagePages Form or SaveFont function.
+        // formula = (iFontNameLength * iPageIdx) + (16 * ((int)Font.num_pages - iPageIdx));
+        public int CalculateOffsetNameAtIndex(int iPageIdx)
+        {
+            int tmpIndex = 0, i;
+            int iFontNameLength = Font.filename.Length;
+            int iNumPages;
+
+            iNumPages = (int)Font.num_pages;
+
+            //if (!bNumPagesUpdated) iNumPages++;
+
+            if (iPageIdx < 10)
+            {
+                tmpIndex = (iFontNameLength * iPageIdx) + (16 * (iNumPages - iPageIdx));
+            }
+            else
+            {
+                tmpIndex = (iFontNameLength * 10) + ((iFontNameLength + 1) * (iPageIdx - 10));
+                tmpIndex += (16 * (iNumPages - iPageIdx));
+            }
+
+            return tmpIndex;
         }
 
 
         // Let's save the .fnt file
         public void SaveFont(string filename)
         {
-            int filesize = 0;
-            int i = 0;
-
-            //string filenameonly = Path.GetFileNameWithoutExtension(Font.filename);
-
-            filesize = CalculateFileSize();
-
-            byte[] fntArray = new byte[filesize];
-            //byte[] strFontName = Encoding.ASCII.GetBytes(filenameonly);
+            int i = 0, j = 0;
 
             // First, let's write the header
-            // Let's prepare the Memory Writer
-            using (var fntSaveMemory = new MemoryStream(fntArray))
+            // Let's prepare the dynamic Memory Writer
+            MemoryStream fntArray = new MemoryStream();
+            BinaryWriter fntWriter = new BinaryWriter(fntArray);
+
+            // - Put Font HDR in memory Byte Array
+            fntWriter.Write(Font.num_pages);
+            fntWriter.Write(Font.charinfosize);
+
+            fntWriter.Write(Font.version);
+            fntWriter.Write(Font.line_spacing);
+            fntWriter.Write(Font.shift_upper);
+            fntWriter.Write(Font.shift_lower);
+            fntWriter.Write(Font.shift_left);
+            fntWriter.Write(Font.shift_right);
+            fntWriter.Write(Font.offset_charsinfo);
+
+            // - Write Char Table
+            ReOrderCharTable();
+            fntWriter.Write(Font.chartable);
+
+            // - Write Character Info Values
+            for (i = 0x21; i < FontEditor.MAX_NUM_CHARS; i++)
             {
-                using (var fntSaveWriter = new BinaryWriter(fntSaveMemory))
+                if (Font.char_info[i].charsettings != null)
                 {
-
-                    // - Put Font HDR in memory Byte Array
-                    fntSaveWriter.Write(Font.num_pages);
-                    fntSaveWriter.Write(Font.charinfosize);
-
-                    fntSaveWriter.Write(Font.version);
-                    fntSaveWriter.Write(Font.line_spacing);
-                    fntSaveWriter.Write(Font.shift_upper);
-                    fntSaveWriter.Write(Font.shift_lower);
-                    fntSaveWriter.Write(Font.shift_left);
-                    fntSaveWriter.Write(Font.shift_right);
-                    fntSaveWriter.Write(Font.offset_charsinfo);
-
-                    // - Write Char Table
-                    fntSaveWriter.Write(Font.chartable);
-
-                    // - Write Character Info Values
-                    for (i = 0; i < FontEditor.MAX_NUM_CHARS; i++)
+                    for (j = 0; j < 28; j++)
                     {
-
-                        if (Font.char_info[i].charsettings != null)
-                        {
-                            for (int j = 0; j < 28; j++)
-                            {
-                                fntSaveWriter.Write(Font.char_info[i].charsettings[j]);
-                            }
-
-                            fntSaveWriter.Write(Font.char_info[i].x_topleft);
-                            fntSaveWriter.Write(Font.char_info[i].y_topleft);
-                            fntSaveWriter.Write(Font.char_info[i].x_bottomright);
-                            fntSaveWriter.Write(Font.char_info[i].y_bottomright);
-                        }
+                        fntWriter.Write(Font.char_info[i].charsettings[j]);
                     }
 
-                    // - Write File Info for each page
-                    for (i = 0; i < Font.num_pages; i++)
-                    {
-                        fntSaveWriter.Write(Font.pageinfo[i].tgawidth);
-                        fntSaveWriter.Write(Font.pageinfo[i].tgaheight);
-                        fntSaveWriter.Write(Font.pageinfo[i].tgacolor);
-                        fntSaveWriter.Write(Font.pageinfo[i].tgaxxxxx);
-                    }
-
-                    // - Lastly we write the filename
-                    fntSaveWriter.Write(Font.filename);
-
-                    // - In case we have any buffer, we will write it
-                    if (Font.buffer.Length > 1)
-                    {
-                        fntSaveWriter.Write(Font.buffer);
-                    }
+                    fntWriter.Write(Font.char_info[i].x_topleft);
+                    fntWriter.Write(Font.char_info[i].y_topleft);
+                    fntWriter.Write(Font.char_info[i].x_bottomright);
+                    fntWriter.Write(Font.char_info[i].y_bottomright);
                 }
             }
 
-
-            // - Write Field in memory to file.
-            using (var fntSaveWriter = new BinaryWriter(File.Open(filename, FileMode.Create)))
+            // - Write File Info for each page
+            for (i = 0; i < Font.num_pages; i++)
             {
-               fntSaveWriter.Write(fntArray);
+                fntWriter.Write(Font.pageinfo[i].tgawidth);
+                fntWriter.Write(Font.pageinfo[i].tgaheight);
+
+                // We need to recalculate the offsets in case we added new pages
+                // We do this even we have not added new pages for fixing fonts if needed                
+                Font.pageinfo[i].tgaoffsetname = (uint)CalculateOffsetNameAtIndex(i);
+                fntWriter.Write(Font.pageinfo[i].tgaoffsetname);
+
+                fntWriter.Write(Font.pageinfo[i].tgaxxxxx);
             }
+
+            // - Lastly we write the filenames
+            byte[] tmpFilename = [];
+
+            for (i = 0; i < Font.num_pages; i++)
+            {
+                if (i < 10)
+                {
+                    tmpFilename = new byte[Font.filename.Length];
+
+                    for (j = 0; j < Font.filename.Length - 2; j++)
+                    {
+                        tmpFilename[j] = Font.filename[j];
+                    }
+
+                    tmpFilename[Font.filename.Length - 2] = (byte)(i.ToString("0"))[0];
+                    tmpFilename[Font.filename.Length - 1] = 0;
+                }
+                else
+                {
+                    tmpFilename = new byte[Font.filename.Length + 1];
+
+                    for (j = 0; j < Font.filename.Length - 2; j++)
+                    {
+                        tmpFilename[j] = Font.filename[j];
+                    }
+
+                    tmpFilename[Font.filename.Length - 3] = (byte)(i.ToString("00"))[0];
+                    tmpFilename[Font.filename.Length - 2] = (byte)(i.ToString("00"))[1];
+                    tmpFilename[Font.filename.Length - 1] = 0;
+                }
+
+                //fntSaveWriter.Write(Font.filename);
+                fntWriter.Write(tmpFilename);
+            }
+
+            // - Write Font in memory to file.
+            File.WriteAllBytes(filename, fntArray.ToArray());
+
+        }
+
+        public int DeleteChar(int iIdxChar)
+        {
+            Font.chartable[iIdxChar] = 0x0D;
+            Font.char_info[iIdxChar].charsettings = null;
+            Font.char_info[iIdxChar].enabled = false;
+
+            Font.char_info[iIdxChar].itemNum = 0;
+            Font.char_info[iIdxChar].x_topleft = 0;
+            Font.char_info[iIdxChar].y_topleft = 0;
+            Font.char_info[iIdxChar].x_bottomright = 0;
+            Font.char_info[iIdxChar].y_bottomright = 0;
+
+            Font.loadedchars--;
+
+            return Font.loadedchars;
         }
 
 
+        public int AddChar(int iIdxChar)
+        {
+            Font.chartable[iIdxChar] = (byte)(Font.loadedchars + 1);
+
+            Font.char_info[iIdxChar].itemNum =Font.chartable[iIdxChar];
+            Font.char_info[iIdxChar].x_topleft = 0.0f;
+            Font.char_info[iIdxChar].y_topleft = 0.0f;
+            Font.char_info[iIdxChar].x_bottomright = 10.0f;
+            Font.char_info[iIdxChar].y_bottomright = 10.0f;
+            Font.char_info[iIdxChar].enabled = true;
+            Font.char_info[iIdxChar].charsettings = new sbyte[28];
+
+            Font.loadedchars++;
+
+            return Font.loadedchars;
+        }
     }
 }
