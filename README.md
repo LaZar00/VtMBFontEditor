@@ -8,7 +8,7 @@ You CAN NOT edit the image files (you can use any other tool for do that, like P
 
 The tool is very simple:  
 
-<img width="1351" height="872" alt="imagen" src="https://github.com/user-attachments/assets/278602c6-958e-42b1-9d32-5e06f08e78e6" />
+<img width="1342" height="866" alt="imagen" src="https://github.com/user-attachments/assets/18fb899f-87ad-4f7e-9908-d0467ed07c12" />
 
 Here you can see the characters of the font at the left.  
 At the right you have the list of characters that the font uses (Windows-1252), and you can edit the "Char Values" and "Char Coordinates".  
