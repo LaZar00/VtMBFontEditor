@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FontEditor));
             PanelPbFont = new WheelessPanel();
             pbFont = new PictureBox();
@@ -64,6 +65,8 @@
             LblCharInfoTableIndex = new Label();
             BtnUpdateCoords = new Button();
             GbCharInfoValues = new GroupBox();
+            txtRightSpacingDefault = new TextBox();
+            txtLeftSpacingDefault = new TextBox();
             TxtVal28 = new TextBox();
             TxtVal27 = new TextBox();
             TxtVal26 = new TextBox();
@@ -142,6 +145,7 @@
             lblW = new Label();
             lblH = new Label();
             BtnUpdateCoordsCharVals = new Button();
+            ttShow = new ToolTip(components);
             PanelPbFont.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pbFont).BeginInit();
             GbGlobalFontValues.SuspendLayout();
@@ -468,7 +472,7 @@
             // TxtCharInfoIndex
             // 
             TxtCharInfoIndex.Font = new Font("Segoe UI", 9F);
-            TxtCharInfoIndex.Location = new Point(628, 81);
+            TxtCharInfoIndex.Location = new Point(633, 72);
             TxtCharInfoIndex.MaxLength = 4;
             TxtCharInfoIndex.Name = "TxtCharInfoIndex";
             TxtCharInfoIndex.ReadOnly = true;
@@ -481,7 +485,7 @@
             // 
             LblCharInfoTableIndex.AutoSize = true;
             LblCharInfoTableIndex.Font = new Font("Segoe UI", 9F);
-            LblCharInfoTableIndex.Location = new Point(556, 84);
+            LblCharInfoTableIndex.Location = new Point(561, 75);
             LblCharInfoTableIndex.Name = "LblCharInfoTableIndex";
             LblCharInfoTableIndex.Size = new Size(66, 15);
             LblCharInfoTableIndex.TabIndex = 19;
@@ -501,6 +505,8 @@
             // 
             // GbCharInfoValues
             // 
+            GbCharInfoValues.Controls.Add(txtRightSpacingDefault);
+            GbCharInfoValues.Controls.Add(txtLeftSpacingDefault);
             GbCharInfoValues.Controls.Add(TxtVal28);
             GbCharInfoValues.Controls.Add(TxtVal27);
             GbCharInfoValues.Controls.Add(TxtVal26);
@@ -565,6 +571,30 @@
             GbCharInfoValues.TabIndex = 21;
             GbCharInfoValues.TabStop = false;
             GbCharInfoValues.Text = "Char Values";
+            // 
+            // txtRightSpacingDefault
+            // 
+            txtRightSpacingDefault.Font = new Font("Segoe UI", 9F);
+            txtRightSpacingDefault.Location = new Point(318, 129);
+            txtRightSpacingDefault.Name = "txtRightSpacingDefault";
+            txtRightSpacingDefault.Size = new Size(22, 23);
+            txtRightSpacingDefault.TabIndex = 58;
+            txtRightSpacingDefault.Text = "0";
+            txtRightSpacingDefault.WordWrap = false;
+            txtRightSpacingDefault.Leave += txtRightSpacingDefault_Leave;
+            txtRightSpacingDefault.MouseHover += txtRightSpacingDefault_MouseHover;
+            // 
+            // txtLeftSpacingDefault
+            // 
+            txtLeftSpacingDefault.Font = new Font("Segoe UI", 9F);
+            txtLeftSpacingDefault.Location = new Point(318, 77);
+            txtLeftSpacingDefault.Name = "txtLeftSpacingDefault";
+            txtLeftSpacingDefault.Size = new Size(22, 23);
+            txtLeftSpacingDefault.TabIndex = 57;
+            txtLeftSpacingDefault.Text = "0";
+            txtLeftSpacingDefault.WordWrap = false;
+            txtLeftSpacingDefault.Leave += txtLeftSpacingDefault_Leave;
+            txtLeftSpacingDefault.MouseHover += txtLeftSpacingDefault_MouseHover;
             // 
             // TxtVal28
             // 
@@ -653,7 +683,7 @@
             TxtVal19.Font = new Font("Segoe UI", 9F);
             TxtVal19.Location = new Point(269, 129);
             TxtVal19.Name = "TxtVal19";
-            TxtVal19.Size = new Size(71, 23);
+            TxtVal19.Size = new Size(43, 23);
             TxtVal19.TabIndex = 47;
             TxtVal19.WordWrap = false;
             // 
@@ -671,7 +701,7 @@
             TxtVal17.Font = new Font("Segoe UI", 9F);
             TxtVal17.Location = new Point(269, 77);
             TxtVal17.Name = "TxtVal17";
-            TxtVal17.Size = new Size(71, 23);
+            TxtVal17.Size = new Size(43, 23);
             TxtVal17.TabIndex = 45;
             TxtVal17.WordWrap = false;
             // 
@@ -1226,7 +1256,7 @@
             // TxtMaxChars
             // 
             TxtMaxChars.Font = new Font("Segoe UI", 9F);
-            TxtMaxChars.Location = new Point(628, 107);
+            TxtMaxChars.Location = new Point(633, 98);
             TxtMaxChars.Name = "TxtMaxChars";
             TxtMaxChars.ReadOnly = true;
             TxtMaxChars.Size = new Size(40, 23);
@@ -1236,7 +1266,7 @@
             // 
             lblMaxChars.AutoSize = true;
             lblMaxChars.Font = new Font("Segoe UI", 9F);
-            lblMaxChars.Location = new Point(557, 110);
+            lblMaxChars.Location = new Point(562, 101);
             lblMaxChars.Name = "lblMaxChars";
             lblMaxChars.Size = new Size(65, 15);
             lblMaxChars.TabIndex = 35;
@@ -1248,10 +1278,11 @@
             ChkEnabled.AutoSize = true;
             ChkEnabled.Enabled = false;
             ChkEnabled.Font = new Font("Segoe UI", 9F);
-            ChkEnabled.Location = new Point(578, 145);
+            ChkEnabled.Location = new Point(535, 159);
             ChkEnabled.Name = "ChkEnabled";
             ChkEnabled.Size = new Size(68, 19);
             ChkEnabled.TabIndex = 36;
+            ChkEnabled.Tag = "dd";
             ChkEnabled.Text = "Enabled";
             ChkEnabled.UseVisualStyleBackColor = true;
             ChkEnabled.Click += chkEnabled_Click;
@@ -1522,5 +1553,8 @@
         private Label lblH;
         public TextBox TxtMaxChars;
         private Button BtnUpdateCoordsCharVals;
+        private TextBox txtRightSpacingDefault;
+        private TextBox txtLeftSpacingDefault;
+        private ToolTip ttShow;
     }
 }

@@ -14,7 +14,7 @@ namespace VtMBFontEditor
         private const string CFG_FILE_NAME = "VtMBFontEditor.cfg";
 
         public string strFontPath, strGlobalPath;
-        public int iCodepage;
+        public int iCodepage, iLeftSpacingLetter, iRightSpacingLetter;
 
         public Hashtable lstCFGKeys = new Hashtable();
 
@@ -22,12 +22,18 @@ namespace VtMBFontEditor
         {
             lstCFGKeys.Add("FONT_FOLDER", "");
             lstCFGKeys.Add("CODEPAGE", "");
+
+            lstCFGKeys.Add("LEFTSPACINGLETTER", "");
+            lstCFGKeys.Add("RIGHTSPACINGLETTER", "");
         }
 
         public void SetDefaultValues()
         {
             strFontPath = "";
             iCodepage = 1252;
+
+            iLeftSpacingLetter = 99;
+            iRightSpacingLetter = 99;
         }
 
         public void ReadCFGFile()
@@ -62,6 +68,16 @@ namespace VtMBFontEditor
                     iCodepage = 1252;
                 }
 
+                if (!int.TryParse(lstCFGKeys["LEFTSPACINGLETTER"].ToString(), out iLeftSpacingLetter))
+                {
+                    iLeftSpacingLetter = 99;
+                }
+
+                if (!int.TryParse(lstCFGKeys["RIGHTSPACINGLETTER"].ToString(), out iRightSpacingLetter))
+                {
+                    iRightSpacingLetter = 99;
+                }
+
             }
             else
             {
@@ -77,6 +93,9 @@ namespace VtMBFontEditor
 
             lstCFGKeys["FONT_FOLDER"] = strFontPath;
             lstCFGKeys["CODEPAGE"] = iCodepage.ToString();
+
+            lstCFGKeys["LEFTSPACINGLETTER"] = iLeftSpacingLetter.ToString();
+            lstCFGKeys["RIGHTSPACINGLETTER"] = iRightSpacingLetter.ToString();
 
             // Write VtMBTranslator.cfg
             foreach (DictionaryEntry strCFGKey in lstCFGKeys)

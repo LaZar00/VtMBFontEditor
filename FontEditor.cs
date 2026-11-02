@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace VtMBFontEditor
 {
@@ -41,6 +42,8 @@ namespace VtMBFontEditor
             FT.ReadCFGFile();
 
             CbCodepage.SelectedIndex = CbCodepage.Items.IndexOf(FT.iCodepage.ToString());
+            txtLeftSpacingDefault.Text = FT.iLeftSpacingLetter.ToString();
+            txtRightSpacingDefault.Text = FT.iRightSpacingLetter.ToString();
         }
 
 
@@ -167,7 +170,7 @@ namespace VtMBFontEditor
         {
             // Draw the rectangle
             g.DrawRectangle(new Pen(Color.GreenYellow) { Alignment = PenAlignment.Inset },
-                            xtoplpixel, ytoplpixel, 
+                            xtoplpixel, ytoplpixel,
                             xbottomrpixel - xtoplpixel, ybottomrpixel - ytoplpixel);
 
             SolidBrush b = new SolidBrush(Color.GreenYellow);
@@ -469,31 +472,39 @@ namespace VtMBFontEditor
 
         private void UpdateCharValuesWhenCoordinatesChange()
         {
-            int iXtopL, iYtopL, iXbottomR, iYbottomR;
+            int iXtopL, iYtopL, iXbottomR, iYbottomR, iYbottomSpacing;
 
             iXtopL = Int32.Parse(TxtXtopL.Text);
             iYtopL = Int32.Parse(TxtYtopL.Text);
             iXbottomR = Int32.Parse(TxtXbottomR.Text);
             iYbottomR = Int32.Parse(TxtYbottomR.Text);
+            iYbottomSpacing = Int32.Parse(TxtVal23.Text);
 
             // Values to update explained.
             // The "By default value" is set after looking at different values in different fonts.
 
-            // Val 17 (L.Spacing): By default 0.
-            TxtVal17.Text = "0";
+            // Val 17 (L.Spacing): We will use default value if needed.
+
+            if (txtLeftSpacingDefault.Text != "99")
+            {
+                TxtVal17.Text = txtLeftSpacingDefault.Text;
+            }           
 
             // Val 18 & 27 (Tex. W): By default Bottom X Coord - Top X Coord
             TxtVal18.Text = (iXbottomR - iXtopL).ToString();
             TxtVal27.Text = TxtVal18.Text;
 
-            // Val 19 (R. Spacing): By default 1.
-            TxtVal19.Text = "1";
+            // Val 19 (R. Spacing): We will use default value if needed.
+            if (txtRightSpacingDefault.Text != "99")
+            {
+                TxtVal19.Text = txtRightSpacingDefault.Text;
+            }
 
             // Val 20: By default 0.
             TxtVal20.Text = "0";
 
             // Val 21 (Top Spacing): By default Bottom Y Coord - Top Y Coord
-            TxtVal21.Text = ((iYbottomR - iYtopL) * -1).ToString();
+            TxtVal21.Text = ((iYbottomR - iYtopL - 1 - iYbottomSpacing) * -1).ToString();
 
             // Val 22 (Top Scaling): By default -1
             TxtVal22.Text = "-1";
@@ -1016,7 +1027,7 @@ namespace VtMBFontEditor
                     }
                     else
                     {
-                        if (MessageBox.Show("Disabling this character means that you will loose all the data.\n" +
+                        if (MessageBox.Show("Disabling this character means that you will lose all the data.\n" +
                                             "Are you sure about removing this character?",
                                             "Warning",
                                             MessageBoxButtons.YesNo) == DialogResult.Yes)
@@ -1144,7 +1155,7 @@ namespace VtMBFontEditor
             {
                 SolidBrush b = new SolidBrush(Color.Gold);
 
-                e.Graphics.FillRectangle(b, ((_xPosTopLeft - 1) * TbZoom.Value), ((_yPosTopLeft - 1) * TbZoom.Value), 
+                e.Graphics.FillRectangle(b, ((_xPosTopLeft - 1) * TbZoom.Value), ((_yPosTopLeft - 1) * TbZoom.Value),
                                             1 * TbZoom.Value, 1 * TbZoom.Value);
             }
         }
@@ -1372,6 +1383,28 @@ namespace VtMBFontEditor
 
                 PanelPbFont.AutoScrollPosition = new Point(_iXOffset, _iYOffset);
             }
+        }
+
+        private void txtLeftSpacingDefault_MouseHover(object sender, EventArgs e)
+        {
+            ttShow.Show("Default Left Spacing for the letter.\nThis value will remain untouched\nand will be used for calculations.\nIf value = 99, it will not be used.", (Control)sender, 5000);
+        }
+
+        private void txtRightSpacingDefault_MouseHover(object sender, EventArgs e)
+        {
+            ttShow.Show("Default Right Spacing for the letter.\nThis value will remain untouched\nand will be used for calculations.\nIf value = 99, it will not be used.", (Control)sender, 5000);
+        }
+
+        private void txtLeftSpacingDefault_Leave(object sender, EventArgs e)
+        {
+            if (int.TryParse(txtLeftSpacingDefault.Text, out FT.iLeftSpacingLetter)) 
+                FT.WriteCFGFile();            
+        }
+
+        private void txtRightSpacingDefault_Leave(object sender, EventArgs e)
+        {
+            if (int.TryParse(txtRightSpacingDefault.Text, out FT.iRightSpacingLetter))
+                FT.WriteCFGFile();
         }
     }
 
